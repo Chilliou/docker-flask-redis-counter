@@ -9,6 +9,12 @@
 
 ---
 
+## 📖 Documentation Utilisée
+
+- [QuickStart](https://docs.docker.com/compose/gettingstarted/)
+
+- [Automate your builds with GitHub Actions](https://docs.docker.com/guides/ruby/configure-github-actions/)
+
 ## 🏗 Architecture
 
 L'application est composée de deux services isolés :
