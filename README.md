@@ -1,12 +1,12 @@
 # 🐳 Docker Flask Redis Counter
 
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
-> **Projet de démonstration d'une architecture micro-services conteneurisée.**
-> Ce projet illustre l'orchestration entre un frontend (Flask) et une base de données (Redis) via Docker Compose, avec une gestion stricte des réseaux et des variables d'environnement.
+![Tests](https://img.shields.io/badge/Tests-Pytest-green?style=flat&logo=python)
+[![CI/CD Pipeline](https://github.com/Chilliou/docker-flask-redis-counter/actions/workflows/ci.yml/badge.svg)](https://github.com/Chilliou/docker-flask-redis-counter/actions)
+![Docker Image Size](https://img.shields.io/docker/image-size/chilliou/docker-flask-redis-counter/latest?style=flat&logo=docker)
 
+> **Projet DevOps complet : Architecture Micro-services & Pipeline CI/CD.**
+> Démonstration d'une application Python/Flask stateful, conteneurisée et déployée automatiquement via GitHub Actions.
 ---
 
 ## 📖 Documentation Utilisée
@@ -14,6 +14,28 @@
 - [QuickStart](https://docs.docker.com/compose/gettingstarted/)
 
 - [Automate your builds with GitHub Actions](https://docs.docker.com/guides/ruby/configure-github-actions/)
+
+## 🔄 Pipeline CI/CD (Automation)
+
+Ce projet intègre une chaîne d'intégration et de déploiement continu (**GitHub Actions**) qui garantit la qualité et la livraison du code sans intervention humaine.
+
+**Workflow :**
+1.  **Code Quality (CI)** : Analyse statique du code avec `Flake8` (Linting) pour respecter les standards PEP8.
+2.  **Automated Testing (CI)** : Exécution des tests unitaires avec `Pytest`.
+3.  **Security** : Gestion des secrets (Docker Token) via GitHub Secrets.
+4.  **Delivery (CD)** : Si les tests passent, construction de l'image Docker multi-arch et push automatique sur le **Docker Hub**.
+
+```mermaid
+graph LR
+    A[Push sur Main] --> B(Linting & Tests)
+    B -- Succès --> C{Build Docker}
+    B -- Échec --> F[Stop Pipeline ❌]
+    C --> D[Push Docker Hub]
+    D --> E[Production Ready ✅]
+```
+---
+
+
 
 ## 🏗 Architecture
 
