@@ -8,6 +8,7 @@ app = Flask(__name__)
 
 cache = redis.Redis(host=os.environ.get('REDIS_HOST', 'redis'), port=6379)
 
+
 def get_hit_count():
     retries = 5
     while True:
@@ -19,10 +20,12 @@ def get_hit_count():
             retries -= 1
             time.sleep(0.5)
 
+
 @app.route('/')
 def hello():
     count = get_hit_count()
     return 'Bonjour! J\'ai été vu {} fois.\n'.format(count)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
