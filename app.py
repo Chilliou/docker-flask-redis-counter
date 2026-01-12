@@ -44,14 +44,14 @@ def get_ml_analysis():
     sentence = random.choice(phrases)
 
     scores = analyzer.polarity_scores(sentence)
-    compound = scores['compound'] 
+    compound = scores['compound']
 
     if compound >= 0.05:
         emotion = "POSITIF 😃"
-        color = "#28a745" 
+        color = "#28a745"
     elif compound <= -0.05:
         emotion = "NEGATIF 😡"
-        color = "#dc3545" 
+        color = "#dc3545"
     else:
         emotion = "NEUTRE 😐"
         color = "#ffc107"
