@@ -1,114 +1,71 @@
-# 🐳 Docker Flask Redis Counter
+# ☁️ Cloud Native DevOps Project : Flask, Redis & Embedded AI
 
+![AWS](https://img.shields.io/badge/AWS-EU%20North%201-orange)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-purple)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue)
+![Machine Learning](https://img.shields.io/badge/AI-Embedded%20NLP-green)
 
-![Tests](https://img.shields.io/badge/Tests-Pytest-green?style=flat&logo=python)
-[![CI/CD Pipeline](https://github.com/Chilliou/docker-flask-redis-counter/actions/workflows/ci.yml/badge.svg)](https://github.com/Chilliou/docker-flask-redis-counter/actions)
-![Docker Image Size](https://img.shields.io/docker/image-size/chilliou/docker-flask-redis-counter/latest?style=flat&logo=docker)
+Projet de Master 2 (IWOCS) combinant **Infrastructure as Code**, **Intégration Continue** et **Machine Learning**.
+L'application est une plateforme interactive d'analyse de sentiments, déployée sur une architecture AWS Serverless.
 
-> **Projet DevOps complet : Architecture Micro-services & Pipeline CI/CD.**
-> Démonstration d'une application Python/Flask stateful, conteneurisée et déployée automatiquement via GitHub Actions.
----
+## 🏗 Architecture Technique
 
-## 📖 Documentation Utilisée
+Le projet repose sur une architecture micro-services résiliente :
 
-- [QuickStart](https://docs.docker.com/compose/gettingstarted/)
+* **Frontend/Backend :** Python Flask.
+* **Cache :** Redis (Pattern *Sidecar* pour une latence nulle).
+* **Machine Learning :** Pipeline NLP hybride (Deep Translator + VADER) embarqué dans le conteneur.
+* **Infrastructure AWS :**
+    * **ECS Fargate :** Exécution Serverless des conteneurs.
+    * **ALB (Application Load Balancer) :** Répartition de charge et point d'entrée unique.
+    * **ECR (Elastic Container Registry) :** Stockage des images Docker.
+    * **VPC Custom :** Réseau isolé avec sous-réseaux publics/privés.
 
-- [Automate your builds with GitHub Actions](https://docs.docker.com/guides/ruby/configure-github-actions/)
+## 🚀 Fonctionnalités Clés
 
-## 🔄 Pipeline CI/CD (Automation)
+### 1. Infrastructure as Code (IaC)
+Toute l'infrastructure est décrite via **Terraform**.
+* Déploiement reproductible en une commande (`terraform apply`).
+* Gestion des rôles IAM (Sécurité), des Security Groups et du Réseau.
 
-Ce projet intègre une chaîne d'intégration et de déploiement continu (**GitHub Actions**) qui garantit la qualité et la livraison du code sans intervention humaine.
+### 2. Pipeline CI/CD (DevOps)
+Automatisation complète via **GitHub Actions** :
+* Linter Python (Flake8) pour garantir la qualité du code (Quality Gate).
+* Build de l'image Docker multi-stage.
+* Push automatique vers AWS ECR.
+* Déploiement continu sur ECS (Zero Downtime).
 
-**Workflow :**
-1.  **Code Quality (CI)** : Analyse statique du code avec `Flake8` (Linting) pour respecter les standards PEP8.
-2.  **Automated Testing (CI)** : Exécution des tests unitaires avec `Pytest`.
-3.  **Security** : Gestion des secrets (Docker Token) via GitHub Secrets.
-4.  **Delivery (CD)** : Si les tests passent, construction de l'image Docker multi-arch et push automatique sur le **Docker Hub**.
+### 3. Intelligence Artificielle (Embedded ML)
+Intégration d'un module d'analyse de sentiment (NLP) :
+* Traduction automatique (Français -> Anglais).
+* Analyse de polarité (Positif/Négatif/Neutre) via l'algorithme VADER.
+* Exécution **Edge Computing** (dans le conteneur) pour réduire les coûts et la latence.
 
-```mermaid
-graph LR
-    A[Push sur Main] --> B(Linting & Tests)
-    B -- Succès --> C{Build Docker}
-    B -- Échec --> F[Stop Pipeline ❌]
-    C --> D[Push Docker Hub]
-    D --> E[Production Ready ✅]
-```
----
+## 🛠️ Comment déployer (Localement)
 
-
-
-## 🏗 Architecture
-
-L'application est composée de deux services isolés :
-
-1.  **Web App (Python/Flask)** : Sert l'interface utilisateur et communique avec la base de données.
-2.  **Database (Redis Alpine)** : Stocke le nombre de visites (Stateful).
-
-**Points techniques clés :**
-* Isolation des processus via **Docker Containers**.
-* Communication inter-conteneurs via un **Bridge Network** privé (DNS interne).
-* Configuration dynamique via **Environment Variables** (Pas de hardcoding d'IPs).
-* Optimisation de l'image Python (utilisation de l'image `slim` et gestion du cache des layers).
-
----
-
-## 🚀 Démarrage Rapide
-
-### Prérequis
-* Docker & Docker Compose installés.
+### Pré-requis
+* AWS CLI configuré (`aws configure`).
+* Terraform installé.
 
 ### Installation
-
-1.  **Cloner le dépôt**
+1.  Cloner le dépôt :
     ```bash
-    git clone https://github.com/Chilliou/docker-flask-redis-counter.git
-    cd docker-flask-redis-counter
+    git clone [https://github.com/ton-user/ton-repo.git](https://github.com/ton-user/ton-repo.git)
+    cd terraform
     ```
 
-2.  **Lancer la stack (Build & Run)**
+2.  Lancer l'infrastructure :
     ```bash
-    docker-compose up --build -d
+    terraform init
+    terraform apply
     ```
 
-3.  **Accéder à l'application**
-    Ouvrir le navigateur à l'adresse : [http://localhost:8000](http://localhost:8000)
+3.  Accéder à l'application :
+    L'URL du Load Balancer s'affichera dans le terminal à la fin du déploiement (Output `app_url`).
 
-4.  **Arrêter les services**
-    ```bash
-    docker-compose down
-    ```
+## 📸 Aperçu
+
+<img width="728" height="631" alt="image" src="https://github.com/user-attachments/assets/cd948281-6ce1-45de-80a2-6f79e5a9e20f" />
 
 ---
-
-## 📂 Structure du Projet
-
-```bash
-.
-├── app.py              # Code source de l'application Flask
-├── Dockerfile          # Instructions de build de l'image Web
-├── docker-compose.yml  # Orchestration des services & Réseau
-├── requirements.txt    # Dépendances Python
-└── README.md           # Documentation
-```
-
-## 🛠 Commandes Utiles
-Vérifier les logs du conteneur web :
-
-```Bash
-
-docker-compose logs -f web
-```
-Vérifier l'état des conteneurs :
-
-```Bash
-
-docker-compose ps
-```
-Accéder au shell du conteneur Redis :
-
-```Bash
-docker-compose exec redis_db sh
-```
-
-## 👤 Auteur
-Chilliou - Ingénieur DevOps Junior
+*Projet réalisé dans le cadre du Master 2 IWOCS - Université Le Havre Normandie*
