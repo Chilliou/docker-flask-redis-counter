@@ -2,13 +2,11 @@ import time
 import redis
 import os
 import random
-import boto3
 from flask import Flask
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 
 app = Flask(__name__)
-
-# --- CONFIG REDIS ---
 redis_host = os.environ.get('REDIS_HOST', 'localhost')
 try:
     cache = redis.Redis(host=redis_host, port=6379, socket_connect_timeout=1)
@@ -16,13 +14,7 @@ except Exception:
     cache = None
 
 
-ai_error_init = None
-try:
-    translate = boto3.client('translate', region_name='us-east-1')
-    ai_available = True
-except Exception as e:
-    ai_available = False
-    ai_error_init = str(e)
+analyzer = SentimentIntensityAnalyzer()
 
 
 def get_hit_count():
@@ -40,46 +32,57 @@ def get_hit_count():
             time.sleep(0.5)
 
 
-def get_translated_message():
-    base_text = "L'application est en ligne sur AWS ECS !"
+def get_ml_analysis():
+    phrases = [
+        "AWS ECS is absolutely amazing and fast!",
+        "This error 503 is really annoying and bad.",
+        "The deployment process with Terraform is smooth.",
+        "I hate when the cloud bill is too high.",
+        "DevOps makes life so much easier and happy."
+    ]
 
-    if not ai_available:
-        return f"Erreur Init IA : {ai_error_init}"
+    sentence = random.choice(phrases)
 
-    target_lang = random.choice(['en', 'es', 'de', 'ja', 'fr'])
+    scores = analyzer.polarity_scores(sentence)
+    compound = scores['compound'] 
 
-    if target_lang == 'fr':
-        return base_text + " (Français par hasard)"
+    if compound >= 0.05:
+        emotion = "POSITIF 😃"
+        color = "#28a745" 
+    elif compound <= -0.05:
+        emotion = "NEGATIF 😡"
+        color = "#dc3545" 
+    else:
+        emotion = "NEUTRE 😐"
+        color = "#ffc107"
 
-    try:
-        result = translate.translate_text(
-            Text=base_text,
-            SourceLanguageCode='fr',
-            TargetLanguageCode=target_lang
-        )
-        return f"{result['TranslatedText']} (Traduit en {target_lang})"
-    except Exception as e:
-        # ICI : On retourne l'erreur technique pour que tu la voies
-        return f"ERREUR APPEL AWS : {str(e)}"
+    return sentence, emotion, color, round(compound, 2)
 
 
 @app.route('/')
 def hello():
     try:
         count = get_hit_count()
-        message = get_translated_message()
+        text, sentiment, color, score = get_ml_analysis()
     except Exception as e:
         count = "Erreur"
-        message = f"Gros Crash : {str(e)}"
+        text = str(e)
+        sentiment = "Erreur"
+        color = "black"
+        score = 0
 
     return f'''
     <div style="text-align: center; \
         margin-top: 50px; font-family: sans-serif;">
-        <h1>🚀 DevOps & AI Project</h1>
-        <h2 style="color: #007bff;">{message}</h2>
+        <h1>🚀 DevOps & Embedded ML</h1>
+        <p>Le conteneur analyse cette phrase en temps réel :</p>
+        <h3 style="font-style: italic;">"{text}"</h3>
+        <hr style="width: 50%; margin: 20px auto;">
+        <p>Verdict du Modèle IA :</p>
+        <h2 style="color: {color};">{sentiment} (Score: {score})</h2>
         <br>
         <p>Visites : <strong>{count}</strong></p>
-        <p><small>Debug Mode Active</small></p>
+        <p><small>Powered by ECS Fargate & VADER NLP (Local ML)</small></p>
     </div>
     '''
 

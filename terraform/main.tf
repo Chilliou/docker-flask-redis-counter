@@ -118,25 +118,6 @@ resource "aws_iam_role" "ecs_exec_role" {
   })
 }
 
-# Permission pour utiliser l'IA de traduction (Amazon Translate)
-resource "aws_iam_role_policy" "translate_policy" {
-  name = "iwocs-translate-policy"
-  role = aws_iam_role.ecs_exec_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "translate:TranslateText"
-        ]
-        Effect   = "Allow"
-        Resource = "*"
-      },
-    ]
-  })
-}
-
 resource "aws_iam_role_policy_attachment" "ecs_exec_policy" {
   role       = aws_iam_role.ecs_exec_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
