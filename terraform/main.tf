@@ -33,6 +33,11 @@ resource "aws_ecr_repository" "app_repo" {
   force_delete = true
 }
 
+resource "aws_cloudwatch_log_group" "ecs_log_group" {
+  name              = "/ecs/iwocs-app"
+  retention_in_days = 7
+}
+
 # --- 3. SÉCURITÉ ---
 resource "aws_security_group" "alb_sg" {
   name        = "iwocs-lb-sg"
@@ -112,6 +117,26 @@ resource "aws_iam_role" "ecs_exec_role" {
     Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" } }]
   })
 }
+
+# Permission pour utiliser l'IA de traduction (Amazon Translate)
+resource "aws_iam_role_policy" "translate_policy" {
+  name = "iwocs-translate-policy"
+  role = aws_iam_role.ecs_exec_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "translate:TranslateText"
+        ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "ecs_exec_policy" {
   role       = aws_iam_role.ecs_exec_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
@@ -127,21 +152,37 @@ resource "aws_ecs_task_definition" "app" {
   execution_role_arn       = aws_iam_role.ecs_exec_role.arn
 
   container_definitions = jsonencode([
+    # --- CONTENEUR 1 : TON APP FLASK ---
     {
       name      = "flask-app"
-      # Terraform va chercher l'URL du repo qu'on a créé à l'étape 1
       image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
       essential = true
-      portMappings = [{ containerPort = 5000, hostPort = 5000 }]
+      portMappings = [{
+        containerPort = 5000
+        hostPort      = 5000
+      }]
+      environment = [
+        { name = "REDIS_HOST", value = "localhost" }
+      ]
       logConfiguration = {
-          logDriver = "awslogs"
-          options = {
-            "awslogs-group"         = "/ecs/iwocs-app"
-            "awslogs-region"        = "eu-north-1" # <--- TA RÉGION
-            "awslogs-stream-prefix" = "ecs"
-            "awslogs-create-group"  = "true"
-          }
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_log_group.name
+          "awslogs-region"        = "eu-north-1" 
+          "awslogs-stream-prefix" = "ecs"
         }
+      }
+    },
+    
+    # --- CONTENEUR 2 : REDIS (Le Sidecar) ---
+    {
+      name      = "redis"
+      image     = "redis:alpine" # On prend l'image officielle légère
+      essential = true
+      portMappings = [{
+        containerPort = 6379
+        hostPort      = 6379
+      }]
     }
   ])
 }
