@@ -18,7 +18,7 @@ except Exception:
 
 ai_error_init = None
 try:
-    translate = boto3.client('translate', region_name='eu-north-1')
+    translate = boto3.client('translate', region_name='us-east-1')
     ai_available = True
 except Exception as e:
     ai_available = False
