@@ -10,3 +10,4 @@ services:
 
   redis_db:
     image: "redis:alpine" 
+    
