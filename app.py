@@ -25,7 +25,7 @@ except Exception:
 def get_hit_count():
     if cache is None:
         return "Indisponible (Mode sans Redis)"
-    
+
     retries = 5
     while True:
         try:
@@ -39,12 +39,12 @@ def get_hit_count():
 
 def get_translated_message():
     base_text = "L'application est en ligne sur AWS ECS !"
-    
+
     if not ai_available:
         return base_text
 
     target_lang = random.choice(['en', 'es', 'de', 'ja', 'fr'])
-    
+
     if target_lang == 'fr':
         return base_text
 
