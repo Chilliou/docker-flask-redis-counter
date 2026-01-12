@@ -1,0 +1,45 @@
+# --- TERRAFORM (CRITIQUE) ---
+# Dossier contenant les plugins (lourd et inutile sur git)
+.terraform/
+
+# Fichiers d'état (CONTIENT TES SECRETS ET INFOS INFRA - NE JAMAIS PUBLIER)
+*.tfstate
+*.tfstate.*
+
+# Fichiers de backup automatique
+*.tfstate.backup
+
+# Fichiers de variables contenant des secrets (si tu en crées un jour)
+*.tfvars
+*.tfvars.json
+
+# Logs de crash
+crash.log
+
+# Fichiers de config CLI locaux
+.terraform.lock.hcl
+.terraformrc
+terraform.rc
+
+# --- PYTHON ---
+# Bytecode compilé
+__pycache__/
+*.py[cod]
+
+# Environnements virtuels
+venv/
+.venv/
+env/
+
+# Distribution / Packaging
+*.egg-info/
+dist/
+build/
+
+# --- SYSTÈME & IDE ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- SECRETS ---
+.env

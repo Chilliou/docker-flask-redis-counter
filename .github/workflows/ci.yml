@@ -1,16 +1,14 @@
-name: Python application
+name: Deploy to AWS ECR
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 permissions:
   contents: read
 
 jobs:
-  # JOB 1 : Qualité du code (Lint & Test)
+  # JOB 1 : Qualité du code (On garde, c'est très bien)
   test_and_lint:
     runs-on: ubuntu-latest
     steps:
@@ -27,37 +25,38 @@ jobs:
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # J'ai vu que tu as enlevé le --exit-zero, bravo pour la rigueur !
         flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        pytest
+    # - name: Test with pytest (Décommenter quand tests)
+    #   run: pytest
 
-  # JOB 2 : Livraison (Docker)
-  docker_build:
+  # JOB 2 : Build & Push vers AWS ECR (Le changement est ici)
+  deploy_to_aws:
+    needs: test_and_lint
     runs-on: ubuntu-latest
-    needs: test_and_lint 
     
     steps:
-      # 1. Il faut récupérer le code pour avoir le Dockerfile
       - name: Checkout code
-        uses: actions/checkout@v4 
+        uses: actions/checkout@v4
 
-      # 2. Connexion au Hub
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      # 1. On se connecte à AWS avec tes clés GitHub Secrets
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          username: ${{ vars.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1 
 
-      # 3. Setup de l'outil de build
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # 2. On se logue au registre ECR privé
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      # 4. Build & Push
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: . # <--- On précise que le contexte est le dossier courant (récupéré par checkout)
-          push: true
-          tags: ${{ vars.DOCKER_USERNAME }}/${{ github.event.repository.name }}:latest
+      # 3. On build l'image et on l'envoie chez Amazon
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: iwocs-flask-app 
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
