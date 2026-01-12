@@ -67,3 +67,107 @@ resource "aws_security_group" "ecs_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# --- 4. LOAD BALANCER (ALB) ---
+resource "aws_lb" "main" {
+  name               = "iwocs-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = module.vpc.public_subnets
+}
+
+resource "aws_lb_target_group" "app_tg" {
+  name        = "iwocs-tg"
+  port        = 5000
+  protocol    = "HTTP"
+  vpc_id      = module.vpc.vpc_id
+  target_type = "ip"
+  health_check {
+    path = "/"
+    matcher = "200"
+  }
+}
+
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app_tg.arn
+  }
+}
+
+# --- 5. CLUSTER ECS ---
+resource "aws_ecs_cluster" "main" {
+  name = "iwocs-cluster"
+}
+
+# Rôle IAM pour l'exécution des tâches
+resource "aws_iam_role" "ecs_exec_role" {
+  name = "iwocs-ecs-exec-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "ecs-tasks.amazonaws.com" } }]
+  })
+}
+resource "aws_iam_role_policy_attachment" "ecs_exec_policy" {
+  role       = aws_iam_role.ecs_exec_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Définition de la tâche (Le plan du conteneur)
+resource "aws_ecs_task_definition" "app" {
+  family                   = "iwocs-app-task"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = 256
+  memory                   = 512
+  execution_role_arn       = aws_iam_role.ecs_exec_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "flask-app"
+      # Terraform va chercher l'URL du repo qu'on a créé à l'étape 1
+      image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
+      essential = true
+      portMappings = [{ containerPort = 5000, hostPort = 5000 }]
+      logConfiguration = {
+          logDriver = "awslogs"
+          options = {
+            "awslogs-group"         = "/ecs/iwocs-app"
+            "awslogs-region"        = "eu-north-1" # <--- TA RÉGION
+            "awslogs-stream-prefix" = "ecs"
+            "awslogs-create-group"  = "true"
+          }
+        }
+    }
+  ])
+}
+
+# Le Service (Lance et maintient le conteneur)
+resource "aws_ecs_service" "main" {
+  name            = "iwocs-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = module.vpc.public_subnets
+    security_groups  = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.app_tg.arn
+    container_name   = "flask-app"
+    container_port   = 5000
+  }
+}
+
+# Output final
+output "app_url" {
+  value = "http://${aws_lb.main.dns_name}"
+}
